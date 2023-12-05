@@ -3,76 +3,78 @@
 namespace App\Controllers\Api;
 
 use CodeIgniter\RESTful\ResourceController;
+use App\Models\UserModel;
 
 class ApiController extends ResourceController
 {
-    /**
-     * Return an array of resource objects, themselves in array format
-     *
-     * @return mixed
-     */
-    public function index()
-    {
-        //
+    //POST
+   public function userRegister(){
+    $rules = [
+        "name" => "required",
+        "email" => "required|valid_email|is_unique[users.email]",
+        "password" => "required"
+       
+    ];
+    if(!$this->validate($rules)){
+        //not validated
+        $response = [
+            "status" => 500,
+            "message" => $this->validator->getErrors(),
+            "error" => true,
+            "data" => []
+        ];
     }
+    else{
 
-    /**
-     * Return the properties of a resource object
-     *
-     * @return mixed
-     */
-    public function show($id = null)
-    {
-        //
-    }
+        //validated
+        $data = [
+            "name" => $this->request->getVar("name"),
+            "email" => $this->request->getVar("email"),
+            "password" => password_hash($this->request->getVar("password"), PASSWORD_DEFAULT),
+        ];
+        $user_obj = new UserModel();
+        if($user_obj->insert($data)){
+            //inserted successfully
+            $response = [
+                "status" => 200,
+                "message" => "New User Account created Succeffully",
+                "error" => false,
+                "data" => []
+            ];
+        }
+        else{
+            // failed to insert
+            $response = [
+                "status" => 500,
+                "message" => "Failed to create a user account",
+                "error" => true,
+                "data" => []
+            ];
 
-    /**
-     * Return a new resource object, with default properties
-     *
-     * @return mixed
-     */
-    public function new()
-    {
-        //
-    }
+        }
 
-    /**
-     * Create a new resource object, from "posted" parameters
-     *
-     * @return mixed
-     */
-    public function create()
-    {
-        //
     }
+    return $this->respondCreated($response);
+   }
 
-    /**
-     * Return the editable properties of a resource object
-     *
-     * @return mixed
-     */
-    public function edit($id = null)
-    {
-        //
-    }
+   //POST
+   public function userLogin(){
 
-    /**
-     * Add or update a model resource, from "posted" properties
-     *
-     * @return mixed
-     */
-    public function update($id = null)
-    {
-        //
-    }
+   }
+   //GET
+   public function userProfile(){
 
-    /**
-     * Delete the designated resource object from the model
-     *
-     * @return mixed
-     */
-    public function delete($id = null)
-    {
-        //
-    }
+   }
+   //POST
+   public function createBook(){
+
+   }
+   //GET
+   public function listBook(){
+
+   }
+   //DELETE
+   public function deleteBook(){
+
+   }
 }
