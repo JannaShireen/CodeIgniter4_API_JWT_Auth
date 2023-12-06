@@ -4,6 +4,7 @@ namespace App\Controllers\Api;
 
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\UserModel;
+use Firebase\JWT\JWT;
 
 class ApiController extends ResourceController
 {
@@ -60,6 +61,75 @@ class ApiController extends ResourceController
    //POST
    public function userLogin(){
 
+        $rules = [
+
+            "email" => "required|valid_email",
+            "password" => "required"
+        ];
+        if(!$this->validate($rules)){
+            //validation error
+            $response = [
+                "status" =>500,
+                "message"=> $this->validator->getErrors(),
+                "error"=> true,
+                "data" =>[],
+            ];
+        }
+        else{
+            //validation success
+            $email = $this->request->getVar("email");
+            $password = $this->request->getVar("password");
+            $user_obj = new UserModel();
+            $user_data = $user_obj->where("email", $email)->first();    
+            if(!empty($user_data)){
+                //user exists
+                if(password_verify($password, $user_data['password'])){
+                    //password matched
+                    $iat = time();
+                    $nbf = $iat + 10;
+                    $exp = $iat + 120;
+                    $payload = [
+                        "iat" => $iat,
+                        "nbf" => $nbf,
+                        "exp" => $exp,
+                        "userdata" => $user_data
+                    ];
+                    $token = JWT::encode($payload,$this->getKey(),'HS256');
+                    $response = [
+                        "status" =>500,
+                        "message"=> "User Logged In",
+                        "error"=> false,
+                        "data" =>[
+                            "token" => $token,
+                        ],
+                    ];
+                    
+                }
+                else{
+                    //wrong password
+                    $response = [
+                        "status" =>500,
+                        "message"=> "Password did not match",
+                        "error"=> true,
+                        "data" =>[],
+                    ];
+                }
+
+            }
+            else{
+                //user does not exist
+                $response = [
+                    "status" =>500,
+                    "message"=> "User does not exist",
+                    "error"=> true,
+                    "data" =>[],
+                ];
+            }
+        }
+        return $this->respondCreated($response);
+   }
+   public function getKey(){
+    return "AJDFGHHF";
    }
    //GET
    public function userProfile(){
