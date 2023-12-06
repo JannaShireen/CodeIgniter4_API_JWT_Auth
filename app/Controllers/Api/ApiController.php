@@ -2,6 +2,7 @@
 
 namespace App\Controllers\Api;
 
+use App\Models\BooksModel;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\UserModel;
 use Firebase\JWT\JWT;
@@ -87,14 +88,17 @@ class ApiController extends ResourceController
                 if(password_verify($password, $user_data['password'])){
                     //password matched
                     $iat = time();
-                    $nbf = $iat + 10;
-                    $exp = $iat + 120;
+                    $nbf = $iat;
+                    $exp = $iat + 500;
                     $payload = [
                         "iat" => $iat,
                         "nbf" => $nbf,
                         "exp" => $exp,
-                        "userdata" => $user_data
+                        "userdata" => $user_data,
+                        
                     ];
+                   
+                  
                     $token = JWT::encode($payload,$this->getKey(),'HS256');
                     $response = [
                         "status" =>500,
@@ -175,6 +179,79 @@ class ApiController extends ResourceController
    }
    //POST
    public function createBook(){
+    $rules = [
+        "title" => "required",
+        "price" => "required"
+    ];
+    if(!$this->validate($rules)){
+        //not validated
+        $response = [
+            "status"=> 500,
+            "message" => $this->validator->getErrors(),
+            "data" =>[],
+            "error" => true,
+        ];
+    }
+    else{
+        //validated
+        $auth = $this->request->getHeader("Authorization");
+        try{
+            if(isset($auth)){
+                $token = $auth->getValue();
+                $decoded_data = JWT::decode($token, array($this->getKey()), );
+                $user_id = $decoded_data->userdata->id;
+                $book_obj = new BooksModel();
+                $data = [
+                    "user_id" => $user_id,
+                    "title" => $this->request->getVar('title'),
+                    'price'=> $this->request->getVar('price'),
+                ];
+                if($book_obj->insert($data)){
+    
+                    // values inserted to the table
+                    $response = [
+                        "status" => 200,
+                        "message" => "New Book Created Successfully",
+                        "data"=>[],
+                        "error"=> false,
+                    ];
+                }
+                else{
+                    //failed to insert 
+                    $response = [
+                        "status" => 500,
+                        "message" => "Failed to create book",
+                        "data"=>[],
+                        "error"=> true,
+                    ];
+        
+                }
+    
+            }
+            else{
+                //no authorization
+                $response = [
+                    "status"=> 500,
+                    "message"=> "You must log in",
+                    "data"=>[],
+                    "error"=> true,
+                ];
+            }
+          
+
+        }
+        catch (Exception $e){
+            $response = [
+                "status" => 500,
+                "message" => "Exception :" .$e->getMessage(),
+                "data"=>[],
+                "error"=> true,
+            ];
+        }
+       
+        return $this->respondCreated($response);
+    }
+
 
    }
    //GET
