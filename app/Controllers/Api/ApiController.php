@@ -5,6 +5,7 @@ namespace App\Controllers\Api;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\UserModel;
 use Firebase\JWT\JWT;
+use Exception;
 
 class ApiController extends ResourceController
 {
@@ -133,6 +134,43 @@ class ApiController extends ResourceController
    }
    //GET
    public function userProfile(){
+    $auth = $this->request->getHeader("Authorization");
+    try{
+        if(isset($auth)){
+            $token = $auth->getValue();
+            $decoded_data = JWT::decode($token, array($this->getKey()),);
+            $response = [
+                "status"=> 200,
+                "message"=> "User Profile",
+                "data"=> [
+                    "user" => $decoded_data,
+                    "id" => $decoded_data->userdata->id,
+                ],
+                "error" => false,
+
+            ];
+
+
+        }
+        else{
+            $response = [
+                "status"=> 500,
+                "message"=> "User must login",
+                "error"=> true,
+                "data"=> [],
+            ];
+        }
+
+    }
+    catch(Exception $e){
+        $response = [
+            "status" => 500,
+            "message" => "Exception $e",
+            "error"=> true,
+            "data"=>[]
+        ];
+    }
+    return $this->respondCreated($response);
 
    }
    //POST
